@@ -1,85 +1,91 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
   };
 
   return (
-    <nav className="bg-white shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav className="bg-white shadow-lg">
+      <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <Link to="/" className="text-2xl font-bold text-primary-600">
+              <Link to="/" className="text-xl font-bold text-gray-800">
                 QTOP Analyzer
               </Link>
             </div>
-            {user && (
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                <Link
-                  to="/dashboard"
-                  className="inline-flex items-center px-1 pt-1 text-gray-900 hover:text-primary-600"
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  to="/stock-analysis"
-                  className="inline-flex items-center px-1 pt-1 text-gray-900 hover:text-primary-600"
-                >
-                  Stock Analysis
-                </Link>
-                <Link
-                  to="/portfolio"
-                  className="inline-flex items-center px-1 pt-1 text-gray-900 hover:text-primary-600"
-                >
-                  Portfolio
-                </Link>
-              </div>
-            )}
+            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+              <Link
+                to="/dashboard"
+                className="text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-gray-300"
+              >
+                Dashboard
+              </Link>
+              <Link
+                to="/portfolio"
+                className="text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-gray-300"
+              >
+                Portfolio
+              </Link>
+              <Link
+                to="/stock-analysis"
+                className="text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-gray-300"
+              >
+                Stock Analysis
+              </Link>
+            </div>
           </div>
-
-          {user && (
-            <div className="hidden sm:ml-6 sm:flex sm:items-center">
+          <div className="flex items-center">
+            {user ? (
               <div className="ml-3 relative">
                 <div>
                   <button
-                    type="button"
-                    className="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    onClick={toggleDropdown}
+                    className="max-w-xs bg-gray-800 rounded-full flex items-center text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white"
+                    id="user-menu"
+                    aria-haspopup="true"
                   >
                     <span className="sr-only">Open user menu</span>
-                    <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
-                      <span className="text-primary-600 font-medium">
-                        {user.full_name.charAt(0)}
-                      </span>
+                    <div className="h-8 w-8 rounded-full bg-gray-500 flex items-center justify-center text-white">
+                        {user.name.charAt(0)}
                     </div>
                   </button>
                 </div>
-
-                {isMenuOpen && (
-                  <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
+                {isDropdownOpen && (
+                  <div
+                    className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5"
+                    role="menu"
+                    aria-orientation="vertical"
+                    aria-labelledby="user-menu"
+                  >
                     <div className="px-4 py-2 text-sm text-gray-700 border-b">
-                      {user.full_name}
+                      {user.name}
                     </div>
                     <button
-                      onClick={handleLogout}
+                      onClick={logout}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      role="menuitem"
                     >
                       Sign out
                     </button>
                   </div>
                 )}
               </div>
-            </div>
-          )}
+            ) : (
+              <Link
+                to="/login"
+                className="text-gray-900 inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md hover:bg-gray-50"
+              >
+                Sign in
+              </Link>
+            )}
+          </div>
         </div>
       </div>
     </nav>

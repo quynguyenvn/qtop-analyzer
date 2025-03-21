@@ -1,299 +1,141 @@
-import React, { useState } from 'react';
-import { useQuery } from 'react-query';
-import axios from 'axios';
-import { Line, Bar } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-);
-
-interface StockAnalysis {
-  current_price: number;
-  daily_change: number;
-  daily_change_percentage: number;
-  volume: number;
-  market_cap: number;
-  price_history: Array<{
-    date: string;
-    price: number;
-  }>;
-  technical_indicators: {
-    rsi: number;
-    macd: number;
-    moving_average_20: number;
-    moving_average_50: number;
-    bollinger_bands: {
-      upper: number;
-      middle: number;
-      lower: number;
-    };
-  };
-  fundamental_analysis: {
-    pe_ratio: number;
-    dividend_yield: number;
-    expense_ratio: number;
-    holdings_count: number;
-  };
-  sentiment_analysis: {
-    overall_sentiment: 'positive' | 'neutral' | 'negative';
-    news_sentiment: number;
-    social_sentiment: number;
-  };
-}
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Line } from 'react-chartjs-2';
+import axiosInstance from '../../api/axios';
+import { StockData, ApiResponse } from '../../types';
 
 const StockAnalysis: React.FC = () => {
-  const [timeframe, setTimeframe] = useState<'1d' | '1w' | '1m' | '3m' | '1y'>('1m');
-
-  const { data: analysisData, isLoading } = useQuery<StockAnalysis>(
-    ['stock-analysis', timeframe],
-    async () => {
-      const response = await axios.get(`/api/stocks/qtop/analysis?timeframe=${timeframe}`);
-      return response.data;
+  const { data: stockData } = useQuery({
+    queryKey: ['stock-analysis'],
+    queryFn: async () => {
+      const response = await axiosInstance.get<ApiResponse<StockData>>('/stock-analysis');
+      return response.data.data;
     }
-  );
+  });
 
-  const priceChartData = analysisData?.price_history ? {
-    labels: analysisData.price_history.map(item => item.date),
+  const chartData = stockData?.price_history ? {
+    labels: stockData.price_history.map(point => new Date(point.date).toLocaleDateString()),
     datasets: [
       {
-        label: 'QTOP Price',
-        data: analysisData.price_history.map(item => item.price),
-        borderColor: 'rgb(59, 130, 246)',
-        backgroundColor: 'rgba(59, 130, 246, 0.5)',
+        label: 'Stock Price',
+        data: stockData.price_history.map(point => point.price),
+        borderColor: 'rgb(75, 192, 192)',
         tension: 0.1,
-      },
-      {
-        label: '20-Day MA',
-        data: analysisData.price_history.map(() => analysisData.technical_indicators.moving_average_20),
-        borderColor: 'rgb(16, 185, 129)',
-        backgroundColor: 'rgba(16, 185, 129, 0.5)',
-        borderDash: [5, 5],
-      },
-      {
-        label: '50-Day MA',
-        data: analysisData.price_history.map(() => analysisData.technical_indicators.moving_average_50),
-        borderColor: 'rgb(245, 158, 11)',
-        backgroundColor: 'rgba(245, 158, 11, 0.5)',
-        borderDash: [5, 5],
-      },
-    ],
+      }
+    ]
   } : null;
 
-  const chartOptions = {
-    responsive: true,
-    plugins: {
-      legend: {
-        position: 'top' as const,
-      },
-      title: {
-        display: true,
-        text: 'QTOP Price History',
-      },
-    },
-  };
-
-  if (isLoading) {
+  if (!stockData) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Price Overview */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-gray-900">QTOP ETF Analysis</h2>
-          <div className="flex space-x-2">
-            {(['1d', '1w', '1m', '3m', '1y'] as const).map((tf) => (
-              <button
-                key={tf}
-                onClick={() => setTimeframe(tf)}
-                className={`px-3 py-1 rounded-md text-sm font-medium ${
-                  timeframe === tf
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {tf}
-              </button>
-            ))}
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-8">Stock Analysis</h1>
+
+      {/* Stock Overview */}
+      <div className="bg-white rounded-lg shadow p-6 mb-8">
+        <h2 className="text-xl font-semibold mb-4">Stock Overview</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div>
+            <p className="text-gray-600">Current Price</p>
+            <p className="text-2xl font-semibold">${stockData.current_price.toFixed(2)}</p>
           </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="text-sm font-medium text-gray-500">Current Price</h3>
-            <p className="text-2xl font-semibold text-gray-900">
-              ${analysisData?.current_price?.toFixed(2) ?? '0.00'}
+          <div>
+            <p className="text-gray-600">Daily Change</p>
+            <p className={`text-2xl font-semibold ${stockData.daily_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {stockData.daily_change >= 0 ? '+' : ''}{stockData.daily_change.toFixed(2)}%
             </p>
           </div>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="text-sm font-medium text-gray-500">Daily Change</h3>
-            <p className={`text-2xl font-semibold ${analysisData?.daily_change && analysisData.daily_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              ${analysisData?.daily_change?.toFixed(2) ?? '0.00'}
-            </p>
+          <div>
+            <p className="text-gray-600">Volume</p>
+            <p className="text-2xl font-semibold">{stockData.volume.toLocaleString()}</p>
           </div>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="text-sm font-medium text-gray-500">Volume</h3>
-            <p className="text-2xl font-semibold text-gray-900">
-              {analysisData?.volume?.toLocaleString() ?? '0'}
-            </p>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="text-sm font-medium text-gray-500">Market Cap</h3>
-            <p className="text-2xl font-semibold text-gray-900">
-              ${analysisData?.market_cap?.toLocaleString() ?? '0'}
-            </p>
+          <div>
+            <p className="text-gray-600">Market Cap</p>
+            <p className="text-2xl font-semibold">${stockData.market_cap.toLocaleString()}</p>
           </div>
         </div>
       </div>
 
       {/* Price Chart */}
-      <div className="bg-white shadow rounded-lg p-6">
-        {priceChartData && <Line data={priceChartData} options={chartOptions} />}
+      <div className="bg-white rounded-lg shadow p-6 mb-8">
+        <h2 className="text-xl font-semibold mb-4">Price History</h2>
+        {chartData && (
+          <div className="h-96">
+            <Line
+              data={chartData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  y: {
+                    beginAtZero: false,
+                  }
+                }
+              }}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Technical Analysis */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Technical Analysis</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Technical Analysis */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">Technical Analysis</h2>
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">Technical Indicators</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="text-sm font-medium text-gray-500">RSI</h4>
-                <p className="text-xl font-semibold text-gray-900">
-                  {analysisData?.technical_indicators?.rsi?.toFixed(2) ?? '0.00'}
-                </p>
+            {stockData.technical_indicators.map((indicator) => (
+              <div key={indicator.name} className="flex justify-between items-center">
+                <span className="text-gray-600">{indicator.name}</span>
+                <span className={`font-semibold ${
+                  indicator.signal === 'buy' ? 'text-green-600' :
+                  indicator.signal === 'sell' ? 'text-red-600' :
+                  'text-yellow-600'
+                }`}>
+                  {indicator.signal.toUpperCase()}
+                </span>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="text-sm font-medium text-gray-500">MACD</h4>
-                <p className="text-xl font-semibold text-gray-900">
-                  {analysisData?.technical_indicators?.macd?.toFixed(2) ?? '0.00'}
-                </p>
-              </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="text-sm font-medium text-gray-500">20-Day MA</h4>
-                <p className="text-xl font-semibold text-gray-900">
-                  ${analysisData?.technical_indicators?.moving_average_20?.toFixed(2) ?? '0.00'}
-                </p>
-              </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="text-sm font-medium text-gray-500">50-Day MA</h4>
-                <p className="text-xl font-semibold text-gray-900">
-                  ${analysisData?.technical_indicators?.moving_average_50?.toFixed(2) ?? '0.00'}
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">Bollinger Bands</h3>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="text-sm font-medium text-gray-500">Upper</h4>
-                <p className="text-xl font-semibold text-gray-900">
-                  ${analysisData?.technical_indicators?.bollinger_bands?.upper?.toFixed(2) ?? '0.00'}
-                </p>
+        </div>
+
+        {/* Fundamental Analysis */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">Fundamental Analysis</h2>
+          <div className="grid grid-cols-2 gap-4">
+            {stockData.fundamental_metrics.map((metric) => (
+              <div key={metric.name}>
+                <p className="text-gray-600">{metric.name}</p>
+                <p className="text-lg font-semibold">{metric.value}</p>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="text-sm font-medium text-gray-500">Middle</h4>
-                <p className="text-xl font-semibold text-gray-900">
-                  ${analysisData?.technical_indicators?.bollinger_bands?.middle?.toFixed(2) ?? '0.00'}
-                </p>
-              </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="text-sm font-medium text-gray-500">Lower</h4>
-                <p className="text-xl font-semibold text-gray-900">
-                  ${analysisData?.technical_indicators?.bollinger_bands?.lower?.toFixed(2) ?? '0.00'}
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Fundamental Analysis */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Fundamental Analysis</h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="text-sm font-medium text-gray-500">P/E Ratio</h3>
-            <p className="text-2xl font-semibold text-gray-900">
-              {analysisData?.fundamental_analysis?.pe_ratio?.toFixed(2) ?? '0.00'}
-            </p>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="text-sm font-medium text-gray-500">Dividend Yield</h3>
-            <p className="text-2xl font-semibold text-gray-900">
-              {analysisData?.fundamental_analysis?.dividend_yield?.toFixed(2) ?? '0.00'}%
-            </p>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="text-sm font-medium text-gray-500">Expense Ratio</h3>
-            <p className="text-2xl font-semibold text-gray-900">
-              {analysisData?.fundamental_analysis?.expense_ratio?.toFixed(2) ?? '0.00'}%
-            </p>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="text-sm font-medium text-gray-500">Holdings Count</h3>
-            <p className="text-2xl font-semibold text-gray-900">
-              {analysisData?.fundamental_analysis?.holdings_count?.toLocaleString() ?? '0'}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Sentiment Analysis */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Sentiment Analysis</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="text-sm font-medium text-gray-500">Overall Sentiment</h3>
-            <p className={`text-2xl font-semibold ${
-              analysisData?.sentiment_analysis?.overall_sentiment === 'positive'
-                ? 'text-green-600'
-                : analysisData?.sentiment_analysis?.overall_sentiment === 'negative'
-                ? 'text-red-600'
-                : 'text-gray-600'
-            }`}>
-              {analysisData?.sentiment_analysis?.overall_sentiment
-                ? analysisData.sentiment_analysis.overall_sentiment.charAt(0).toUpperCase() +
-                  analysisData.sentiment_analysis.overall_sentiment.slice(1)
-                : 'Neutral'}
-            </p>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="text-sm font-medium text-gray-500">News Sentiment</h3>
-            <p className="text-2xl font-semibold text-gray-900">
-              {analysisData?.sentiment_analysis?.news_sentiment?.toFixed(2) ?? '0.00'}
-            </p>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="text-sm font-medium text-gray-500">Social Sentiment</h3>
-            <p className="text-2xl font-semibold text-gray-900">
-              {analysisData?.sentiment_analysis?.social_sentiment?.toFixed(2) ?? '0.00'}
-            </p>
-          </div>
+      {/* Recommendations */}
+      <div className="bg-white rounded-lg shadow p-6 mt-8">
+        <h2 className="text-xl font-semibold mb-4">Recommendations</h2>
+        <div className="space-y-4">
+          {stockData.recommendations.map((recommendation, index) => (
+            <div key={index} className="border-l-4 border-blue-500 pl-4">
+              <p className="font-semibold">{recommendation.title}</p>
+              <p className="text-gray-600 mt-1">{recommendation.description}</p>
+              <div className="flex items-center mt-2">
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  recommendation.confidence >= 0.7 ? 'bg-green-100 text-green-800' :
+                  recommendation.confidence >= 0.4 ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  Confidence: {(recommendation.confidence * 100).toFixed(0)}%
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

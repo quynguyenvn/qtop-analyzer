@@ -1,44 +1,42 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from 'react-query';
-import { Toaster } from 'react-hot-toast';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import PrivateRoute from './components/auth/PrivateRoute';
 import Navbar from './components/layout/Navbar';
+import Dashboard from './components/pages/Dashboard';
+import Portfolio from './components/pages/Portfolio';
+import StockAnalysis from './components/pages/StockAnalysis';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
-import Home from './components/pages/Home';
-import Dashboard from './components/pages/Dashboard';
-import StockAnalysis from './components/pages/StockAnalysis';
-import Portfolio from './components/pages/Portfolio';
+import './utils/chartConfig';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
 
 const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router>
-          <div className="min-h-screen bg-gray-50">
+          <div className="min-h-screen bg-gray-100">
             <Navbar />
-            <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+            <main className="py-4">
               <Routes>
-                <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route
-                  path="/dashboard"
+                  path="/"
                   element={
                     <PrivateRoute>
                       <Dashboard />
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/stock-analysis"
-                  element={
-                    <PrivateRoute>
-                      <StockAnalysis />
                     </PrivateRoute>
                   }
                 />
@@ -50,9 +48,16 @@ const App: React.FC = () => {
                     </PrivateRoute>
                   }
                 />
+                <Route
+                  path="/analysis"
+                  element={
+                    <PrivateRoute>
+                      <StockAnalysis />
+                    </PrivateRoute>
+                  }
+                />
               </Routes>
             </main>
-            <Toaster position="top-right" />
           </div>
         </Router>
       </AuthProvider>
