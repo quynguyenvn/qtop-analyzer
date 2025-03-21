@@ -1,11 +1,11 @@
 [build]
   base = "frontend"
-  command = "npm install && npm run build"
+  command = "npm install --legacy-peer-deps && npm run build"
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "18"
-  NPM_VERSION = "9"
+  NODE_VERSION = "18.16.0"
+  NPM_VERSION = "9.5.1"
 
 [[redirects]]
   from = "/*"
