@@ -2,9 +2,26 @@
   base = "frontend"
   command = "npm install && npm run build"
   publish = "dist"
-  package = "frontend"
+
+[build.environment]
+  NODE_VERSION = "18"
+  NPM_VERSION = "9"
 
 [[redirects]]
   from = "/*"
   to = "/index.html"
-  status = 200 
+  status = 200
+
+[build.processing]
+  skip_processing = false
+
+[build.processing.css]
+  bundle = true
+  minify = true
+
+[build.processing.js]
+  bundle = true
+  minify = true
+
+[build.processing.images]
+  compress = true 
